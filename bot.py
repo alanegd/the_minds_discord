@@ -13,8 +13,6 @@ class MyBot(commands.Bot):
         super().__init__(command_prefix, intents=intents, **options)
         self.game = g.Game()
         self.started = False
-        self.current_player_id = 0
-        self.max_round = 9
 
     async def wait_for_reaction(self, message, emoji, ctx, timeout=None):
         def check(reaction, user):
@@ -79,7 +77,7 @@ def run_discord_bot():
 
     async def play_round(ctx):
         async with lock:
-            while bot.game.round <= bot.max_round and bot.game.get_lives() > 0:
+            while bot.game.round <= bot.game.max_round and bot.game.get_lives() > 0:
                 await ctx.send(f"\n`⊱ ───────── Ronda {bot.game.round} ───────── ⊰`\n")
                 bot.game.deal_cards()
 
@@ -110,7 +108,7 @@ def run_discord_bot():
 
             if bot.game.get_lives() < 1:
                 await ctx.send("`Perdieron! Se quedaron sin vidas 🖤`")
-            elif bot.game.round == bot.max_round:
+            elif bot.game.round == bot.game.max_round:
                 await ctx.send("`Ganaron!`")
             await stop(ctx)
 
@@ -141,7 +139,19 @@ def run_discord_bot():
             bot.game.add_player(new_player)
         elif mensaje.content == "`Reacciona a este mensaje si crees que tienes la carta más baja`" and user != bot.user:
             await mensaje.delete()
-            bot.current_player_id = user.id
+
+    @bot.event
+    async def on_reaction_remove(reaction, user):
+        mensaje = reaction.message
+        if mensaje.content == "`El juego está por comenzar. Reacciona a este mensaje para participar`" and user != bot.user:
+            player_id = user.id
+            
+            # Verificar si el jugador ya está en la lista de jugadores y eliminarlo si es necesario
+            for player in bot.game.get_players():
+                if player.get_id() == player_id:
+                    bot.game.get_players().remove(player)
+                    break
+
 
 
     bot.run(TOKEN)

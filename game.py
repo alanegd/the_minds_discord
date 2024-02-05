@@ -6,6 +6,7 @@ class Game:
     def __init__(self):
         self.players = []
         self.round = 1
+        self.max_round = 10
         self.lives = 5
 
     def get_players(self):
