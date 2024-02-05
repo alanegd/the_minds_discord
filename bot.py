@@ -26,8 +26,6 @@ class MyBot(commands.Bot):
         except asyncio.TimeoutError:
             return None
 
-
-
 def run_discord_bot():
     TOKEN = t
     intents = discord.Intents.default()
@@ -73,10 +71,11 @@ def run_discord_bot():
 
         cantidad_jugadores = len(bot.game.get_players())
         print(f'Cantidad de jugadores: {cantidad_jugadores}')
-        if cantidad_jugadores <= 1:
+        if cantidad_jugadores <= 0:
             await ctx.send("`Lo lamento, no hay suficientes jugadores como para comenzar`")
             return
         await play_round(ctx)
+
 
     async def play_round(ctx):
         async with lock:
@@ -86,9 +85,12 @@ def run_discord_bot():
 
                 for player in bot.game.get_players():
                     user = await bot.fetch_user(player.get_id())
-                    print(user)
                     if user:
-                        await user.send(f"\nRonda {bot.game.round}\nTu mano: {player.get_deck()}")  # Enviar mensaje por privado
+                        player_deck = player.get_deck()
+                        deck_image = await bot.game.compose_deck_image(player_deck)
+                        
+                        deck_image.save('images/player_deck.png')
+                        await user.send(f"\nRonda {bot.game.round}\nTu mano: {player_deck}", file=discord.File('images/player_deck.png'))
 
                 while bot.game.get_remaining_cards_amount() > 0 and bot.game.get_lives() > 0:
                     mensaje = await ctx.send("`Reacciona a este mensaje si crees que tienes la carta más baja`")
@@ -101,10 +103,10 @@ def run_discord_bot():
                     await bot.game.play_round(user.id, ctx)
 
                 await ctx.send(f"`Ronda {bot.game.round} finalizada`")
-                bot.game.round += 1
                 if bot.game.round % 3 == 0:
                     bot.game.earn_life()
                     await ctx.send(f"`Ganaron una vida ❤️ extra por haber alcanzado el nivel {bot.game.round}`")
+                bot.game.round += 1
 
             if bot.game.get_lives() < 1:
                 await ctx.send("`Perdieron! Se quedaron sin vidas 🖤`")

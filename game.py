@@ -1,4 +1,6 @@
 import random
+import discord
+from PIL import Image
 
 class Game:
     def __init__(self):
@@ -64,8 +66,12 @@ class Game:
         if card is None:
             await ctx.send(f"<@{current_player_id}> no tienes cartas restantes en tu mazo")
             return False
+        
+        deck_image = await self.compose_deck_image([card])
+                        
+        deck_image.save('images/player_deck.png')
 
-        await ctx.send(f"<@{current_player_id}> soltó la carta: {card}")
+        await ctx.send(f"<@{current_player_id}> soltó la carta: {card}", file=discord.File('images/player_deck.png'))
 
         lowest_card_in_round = self.get_lowest_card_in_round()
 
@@ -74,3 +80,24 @@ class Game:
             await ctx.send(f"`La carta más baja de la ronda era {lowest_card_in_round}\nLes quedan {self.lives} vidas 💔`")
 
         return True
+    
+    async def compose_deck_image(self, player_deck):
+        deck_image = Image.new('RGBA', (132 * len(player_deck), 169), (255, 255, 255, 255)) # Crea canvas vacío donde pegar las cartas
+        
+        for i, card_number in enumerate(player_deck):
+            card_image = await self.extract_card_image(card_number)
+            if card_image:
+                deck_image.paste(card_image, (i * 132, 0))
+        
+        return deck_image
+
+    async def extract_card_image(self, card_number):
+        try:
+            spritesheet = Image.open('images/numbers.png')
+            x_offset = 0
+            y_offset = (card_number - 1) * 169
+            card_image = spritesheet.crop((x_offset, y_offset, x_offset + 132, y_offset + 169))
+            return card_image
+        except Exception as e:
+            print(f"Error al abrir la imagen de la carta {card_number}: {e}")
+            return None
