@@ -51,7 +51,7 @@ def run_discord_bot():
         user_message = str(message.content)
         channel = str(message.channel)
         print(f'{username} dijo: "{user_message}" ({channel})')
-        await send_message(message, user_message, is_private=True)
+        await send_message(message, user_message, is_private=False)
 
     @bot.command()
     async def start(ctx):
@@ -67,9 +67,9 @@ def run_discord_bot():
 
         bot.started = True
 
-        cantidad_jugadores = len(bot.game.get_players())
-        print(f'Cantidad de jugadores: {cantidad_jugadores}')
-        if cantidad_jugadores <= 0:
+        amount_of_players = len(bot.game.get_players())
+        print(f'Cantidad de jugadores: {amount_of_players}')
+        if amount_of_players < bot.game.min_amount_of_players:
             await ctx.send("`Lo lamento, no hay suficientes jugadores como para comenzar`")
             return
         await play_round(ctx)
@@ -77,8 +77,8 @@ def run_discord_bot():
 
     async def play_round(ctx):
         async with lock:
-            while bot.game.round <= bot.game.max_round and bot.game.get_lives() > 0:
-                await ctx.send(f"\n`⊱ ───────── Ronda {bot.game.round} ───────── ⊰`\n")
+            while bot.game.current_round <= bot.game.max_round and bot.game.get_lives() > 0:
+                await ctx.send(f"\n`⊱ ───────── Ronda {bot.game.current_round} ───────── ⊰`\n")
                 bot.game.deal_cards()
 
                 for player in bot.game.get_players():
@@ -88,7 +88,7 @@ def run_discord_bot():
                         deck_image = await bot.game.compose_deck_image(player_deck)
                         
                         deck_image.save('images/player_deck.png')
-                        await user.send(f"\nRonda {bot.game.round}\nTu mano: {player_deck}", file=discord.File('images/player_deck.png'))
+                        await user.send(f"\nRonda {bot.game.current_round}\nTu mano: {player_deck}", file=discord.File('images/player_deck.png'))
 
                 while bot.game.get_remaining_cards_amount() > 0 and bot.game.get_lives() > 0:
                     mensaje = await ctx.send("`Reacciona a este mensaje si crees que tienes la carta más baja`")
@@ -100,15 +100,15 @@ def run_discord_bot():
                         return
                     await bot.game.play_round(user.id, ctx)
 
-                await ctx.send(f"`Ronda {bot.game.round} finalizada`")
-                if bot.game.round % 3 == 0:
+                await ctx.send(f"`Ronda {bot.game.current_round} finalizada`")
+                if bot.game.current_round % 3 == 0:
                     bot.game.earn_life()
-                    await ctx.send(f"`Ganaron una vida ❤️ extra por haber alcanzado el nivel {bot.game.round}`")
-                bot.game.round += 1
+                    await ctx.send(f"`Ganaron una vida ❤️ extra por haber alcanzado el nivel {bot.game.current_round}`")
+                bot.game.current_round += 1
 
             if bot.game.get_lives() < 1:
                 await ctx.send("`Perdieron! Se quedaron sin vidas 🖤`")
-            elif bot.game.round == bot.game.max_round:
+            elif bot.game.current_round == bot.game.max_round:
                 await ctx.send("`Ganaron!`")
             await stop(ctx)
 
@@ -118,7 +118,7 @@ def run_discord_bot():
             await ctx.send("`Error. No hay ninguna partida en progreso`")
             return
         bot.game.reset_game()
-        bot.game.round = 1
+        bot.game.current_round = 1
         bot.started = False
         await ctx.send("`El juego ha finalizado`")
 

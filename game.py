@@ -5,9 +5,10 @@ from PIL import Image
 class Game:
     def __init__(self):
         self.players = []
-        self.round = 1
+        self.current_round = 1
         self.max_round = 10
         self.lives = 5
+        self.min_amount_of_players = 2
 
     def get_players(self):
         return self.players
@@ -26,7 +27,7 @@ class Game:
 
     def reset_game(self):
         self.players = []
-        self.round = 1
+        self.current_round = 1
         self.lives = 5
 
     def get_remaining_cards_amount(self):
@@ -40,7 +41,7 @@ class Game:
         full_deck = list(range(1, 101))  # Cartas del 1 al 100
         random.shuffle(full_deck)
         for player in self.players:
-            cards_per_player = self.round
+            cards_per_player = self.current_round
             player_deck = full_deck[:cards_per_player]  # Cortar el mazo según el número de cartas por jugador
             player.assign_deck(player_deck)
             full_deck = full_deck[cards_per_player:]  # Remover las cartas asignadas del mazo completo
